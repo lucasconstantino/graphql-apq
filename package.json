@@ -50,6 +50,10 @@
   },
   "homepage": "https://github.com/lucasconstantino/graphql-apq#readme",
   "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
     "moduleNameMapper": {
       "^graphql-apq(.*)$": "<rootDir>/src$1"
     }
