@@ -5,6 +5,7 @@
 [![build status](https://img.shields.io/travis/lucasconstantino/graphql-apq/master.svg?style=flat-square)](https://travis-ci.org/lucasconstantino/graphql-apq)
 [![coverage](https://img.shields.io/codecov/c/github/lucasconstantino/graphql-apq.svg?style=flat-square)](https://codecov.io/github/lucasconstantino/graphql-apq)
 [![npm version](https://img.shields.io/npm/v/graphql-apq.svg?style=flat-square)](https://www.npmjs.com/package/graphql-apq)
+[![sponsored by Taller](https://raw.githubusercontent.com/TallerWebSolutions/tallerwebsolutions.github.io/master/sponsored-by-taller.png)](https://taller.net.br/en/)
 
 ---
 
