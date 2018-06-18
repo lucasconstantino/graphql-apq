@@ -1,12 +1,13 @@
 {
-  "name": "graphql-automatic-persisted-queries",
+  "name": "graphql-apq",
   "version": "0.1.0",
-  "description": "Automatic persisted queries for any GraphQL server.",
+  "description": "Automatic persisted queries (APQ) for any GraphQL server.",
   "main": "index.js",
   "scripts": {
     "compile": "babel src -d lib",
     "lint": "eslint index.js src",
     "test": "jest test",
+    "test:watch": "yarn test --watch --collectCoverage=no",
     "codecov": "yarn test && codecov",
     "prepublish": "npm test && npm run lint && npm run compile"
   },
@@ -37,13 +38,20 @@
     "jest": "^23.1.0",
     "ramda": "^0.25.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "memory-cache": "^0.2.0"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lucasconstantino/graphql-automatic-persisted-queries.git"
+    "url": "git+https://github.com/lucasconstantino/graphql-apq.git"
   },
   "bugs": {
-    "url": "https://github.com/lucasconstantino/graphql-automatic-persisted-queries/issues"
+    "url": "https://github.com/lucasconstantino/graphql-apq/issues"
   },
-  "homepage": "https://github.com/lucasconstantino/graphql-automatic-persisted-queries#readme"
+  "homepage": "https://github.com/lucasconstantino/graphql-apq#readme",
+  "jest": {
+    "moduleNameMapper": {
+      "^graphql-apq(.*)$": "<rootDir>/src$1"
+    }
+  }
 }
