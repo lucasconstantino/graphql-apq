@@ -38,7 +38,7 @@ This project currently provides a core system for handling persisted queries and
 ### Middleware
 
 ```js
-import apq from 'graphql-apq'
+import persistedQueries from 'graphql-apq/lib/express'
 import express from 'express'
 import bodyParser from 'body-parser'
 import { graphqlExpress } from 'apollo-server-express'
@@ -49,7 +49,7 @@ const PORT = 3000;
 const app = express();
 
 app
-  .use('/graphql', bodyParser.json(), apq(), graphqlExpress({ schema }))
+  .use('/graphql', bodyParser.json(), persistedQueries(), graphqlExpress({ schema }))
   .listen(PORT)
 ```
 
