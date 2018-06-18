@@ -1,6 +1,9 @@
 {
-  "extends": [ "taller" ],
+  "extends": ["taller"],
   "rules": {
     "no-unused-expressions": "off"
+  },
+  "globals": {
+    "jest": false
   }
 }
