@@ -2,7 +2,7 @@
   "name": "graphql-apq",
   "version": "0.1.0",
   "description": "Automatic persisted queries (APQ) for any GraphQL server.",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "compile": "babel src -d lib",
     "lint": "eslint index.js src",
