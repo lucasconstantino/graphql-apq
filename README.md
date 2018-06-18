@@ -55,8 +55,8 @@ app
 
 #### Options
 
-You can alter some of APQ's default behavior by providing options to the
-middleware initialization as follows:
+You can alter some of APQ's default behavior by providing an object of
+options to the middleware initialization as follows:
 
 ##### `cache`
 
