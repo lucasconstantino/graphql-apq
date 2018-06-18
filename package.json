@@ -1,6 +1,6 @@
 {
   "name": "graphql-apq",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatic persisted queries (APQ) for any GraphQL server.",
   "main": "lib/index.js",
   "scripts": {
