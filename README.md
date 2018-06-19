@@ -11,7 +11,7 @@
 
 This library consists of a server-side implementation of the [persisted queries protocol](https://github.com/apollographql/apollo-link-persisted-queries#protocol) as presented by the [Apollo Engine](https://www.apollographql.com/engine) team.
 
-Apollo Engine is paid GraphQL gateway with many wonderful tools, and this project brings to the open-source world one of those tools.
+Apollo Engine is a paid GraphQL gateway with many wonderful tools, and this project brings to the open-source world one of those tools.
 
 Persisted queries was [first brought up](https://dev-blog.apollodata.com/persisted-graphql-queries-with-apollo-client-119fd7e6bba5) by the Apollo team, but relied mostly on complicated building process to achieve the full benefit proposed. Automatic persisted queries is a concept built on top of that idea, which allows for persisted queries to be registered in run-time.
 
