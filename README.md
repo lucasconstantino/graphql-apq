@@ -1,6 +1,6 @@
 # GraphQL APQ
 
-[Automatic persisted queries](https://www.apollographql.com/docs/engine/auto-persisted-queries.html) made easy.
+[Automatic persisted queries](https://www.apollographql.com/docs/apollo-server/features/apq) made easy.
 
 [![build status](https://img.shields.io/travis/lucasconstantino/graphql-apq/master.svg?style=flat-square)](https://travis-ci.org/lucasconstantino/graphql-apq)
 [![coverage](https://img.shields.io/codecov/c/github/lucasconstantino/graphql-apq.svg?style=flat-square)](https://codecov.io/github/lucasconstantino/graphql-apq)
