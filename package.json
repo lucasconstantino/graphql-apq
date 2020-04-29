@@ -34,6 +34,7 @@
     "graphql": "^15.0.0",
     "graphql-tools": "^5.0.0",
     "jest": "^25.5.0",
+    "prettier": "^2.0.5",
     "ramda": "^0.27.0",
     "supertest": "^4.0.2"
   },
