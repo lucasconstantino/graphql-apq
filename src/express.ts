@@ -2,7 +2,7 @@ import { RequestHandler } from 'express'
 import { APQ, APQConfig } from './core'
 import { PersistedQueryError } from './errors'
 
-export default (options: APQConfig): RequestHandler => {
+export default (options?: APQConfig): RequestHandler => {
   const apq = new APQ(options)
 
   return async (req, res, next) => {

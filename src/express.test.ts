@@ -1,30 +1,38 @@
-import express from 'express'
 import request from 'supertest'
 import bodyParser from 'body-parser'
+import express, {
+  RequestHandler,
+  Response,
+  Request,
+  NextFunction,
+} from 'express'
 
-import persistedQuery from 'graphql-apq/express'
+import { APQConfig } from './'
+import persistedQuery from './express'
 
-const operation = (query, sha256Hash) => ({
+const operation = (query?: string | null, sha256Hash?: string | null) => ({
   ...(sha256Hash ? { extensions: { persistedQuery: { sha256Hash } } } : {}),
   ...(query ? { query } : {}),
 })
 
 describe('express middleware', () => {
   describe('unit', () => {
-    const args = (body) => [
-      { body },
-      { setHeader: jest.fn(), send: jest.fn() },
-      jest.fn(),
-    ]
+    const args = (body?: object) =>
+      [
+        { body } as Request,
+        ({ setHeader: jest.fn(), send: jest.fn() } as unknown) as Response,
+        jest.fn() as NextFunction,
+      ] as const
 
-    const expectErrorResponse = (res, message) => {
+    const expectErrorResponse = (res: Response, message: string) => {
       expect(res.setHeader).toHaveBeenCalledTimes(1)
       expect(res.setHeader).toHaveBeenCalledWith(
         'Content-Type',
         'application/json'
       )
       expect(res.send).toHaveBeenCalledTimes(1)
-      expect(res.send.mock.calls[0][0]).toEqual(
+      expect(res.send).toHaveProperty(
+        'mock.calls.0.0',
         JSON.stringify({ errors: [{ message }] })
       )
     }
@@ -97,9 +105,9 @@ describe('express middleware', () => {
   })
 
   describe('integration', () => {
-    let after
+    let after: RequestHandler
 
-    const getApp = (config) =>
+    const getApp = (config?: APQConfig) =>
       express()
         .use(bodyParser.json())
         .use(persistedQuery(config))

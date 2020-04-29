@@ -1,8 +1,8 @@
-import APQ from 'graphql-apq'
+import APQ, { CacheInterface } from './'
 
 describe('core', () => {
-  let cache
-  let apq
+  let cache: jest.Mocked<CacheInterface>
+  let apq: APQ
 
   const getCache = () => ({
     get: jest.fn(),
@@ -21,6 +21,7 @@ describe('core', () => {
 
   describe('cache', () => {
     it('should create a default cache object', () => {
+      // @ts-ignore
       const cache = new APQ().cache
       expect(cache).toHaveProperty('get', expect.any(Function))
       expect(cache).toHaveProperty('set', expect.any(Function))
@@ -29,16 +30,21 @@ describe('core', () => {
 
     it('should be possible to provide a custom cache object', () => {
       const cache = getCache()
+      // @ts-ignore
       expect(new APQ({ cache }).cache).toBe(cache)
     })
 
     it('should throw for invalid custom cache', () => {
+      // @ts-ignore
       expect(() => new APQ({ cache: '' })).toThrow('Invalid cache')
+      // @ts-ignore
       expect(() => new APQ({ cache: {} })).toThrow('Invalid cache')
     })
 
     it('should throw for invalid resolveHash', () => {
+      // @ts-ignore
       expect(() => new APQ({ resolveHash: '' })).toThrow('Invalid resolveHash')
+      // @ts-ignore
       expect(() => new APQ({ resolveHash: {} })).toThrow('Invalid resolveHash')
     })
   })
@@ -66,6 +72,7 @@ describe('core', () => {
         [null, 'No GraphQL operation provided'],
         [undefined, 'No GraphQL operation provided'],
       ])('should throw for invalid GraphQL operations', (op, expected) => {
+        // @ts-ignore
         return expect(() => apq.processOperation(op)).rejects.toThrow(expected)
       })
 
@@ -108,6 +115,7 @@ describe('core', () => {
         extensions: { persistedQuery: { sha256Hash } },
       }
 
+      // @ts-ignore
       await apq.cache.set(sha256Hash, query)
 
       expect(await apq.processOperation(operation)).toBe(operation)
@@ -138,12 +146,18 @@ describe('core', () => {
 
       const operation = {
         query,
-        extensions: { persistedQuery: { sha256Hash } },
+        extensions: {
+          persistedQuery: {
+            sha256Hash,
+          },
+        },
       }
 
       expect(await apq.processOperation(operation)).toBe(operation)
 
+      // @ts-ignore
       expect(apq.cache.set).toHaveBeenCalledTimes(1)
+      // @ts-ignore
       expect(apq.cache.set).toHaveBeenCalledWith(sha256Hash, query)
     })
   })

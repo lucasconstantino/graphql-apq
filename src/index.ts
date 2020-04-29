@@ -1,1 +1,3 @@
-export { APQ as default } from './core'
+import { APQ } from './core'
+export * from './core'
+export default APQ

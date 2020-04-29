@@ -43,10 +43,7 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "src/**/*.js"
-    ],
-    "moduleNameMapper": {
-      "^graphql-apq(.*)$": "<rootDir>/src$1"
-    }
+    ]
   },
   "dependencies": {
     "memory-cache": "^0.2.0"
@@ -55,7 +52,9 @@
     "@babel/cli": "^7.8.4",
     "@babel/preset-env": "^7.9.5",
     "@babel/preset-typescript": "^7.9.0",
+    "@types/jest": "^25.2.1",
     "@types/memory-cache": "^0.2.1",
+    "@types/supertest": "^2.0.8",
     "@typescript-eslint/parser": "^2.30.0",
     "apollo-server-express": "^2.12.0",
     "codecov": "^3.6.5",
