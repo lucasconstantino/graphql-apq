@@ -2,15 +2,6 @@
   "name": "graphql-apq",
   "version": "0.1.1",
   "description": "Automatic persisted queries (APQ) for any GraphQL server.",
-  "main": "lib/index.js",
-  "scripts": {
-    "compile": "babel src -d lib",
-    "lint": "eslint src",
-    "test": "jest test",
-    "test:watch": "yarn test --watch --collectCoverage=no",
-    "codecov": "yarn test && codecov",
-    "prepublish": "npm test && npm run lint && npm run compile"
-  },
   "keywords": [
     "graphql",
     "persisted queries",
@@ -18,8 +9,46 @@
     "server",
     "queries"
   ],
-  "author": "Lucas Constantino Silva <lucasconstantinosilva@gmail.com>",
+  "homepage": "https://github.com/lucasconstantino/graphql-apq#readme",
+  "bugs": {
+    "url": "https://github.com/lucasconstantino/graphql-apq/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucasconstantino/graphql-apq.git"
+  },
   "license": "MIT",
+  "author": "Lucas Constantino Silva <lucasconstantinosilva@gmail.com>",
+  "main": "lib/index.js",
+  "scripts": {
+    "codecov": "yarn test && codecov",
+    "compile": "babel src -d lib",
+    "lint": "eslint src",
+    "prepublish": "npm test && npm run lint && npm run compile",
+    "test": "jest test",
+    "test:watch": "yarn test --watch --collectCoverage=no"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,json,ts,css,md}": "prettier --write",
+    "*.{js,ts}": "eslint --cache --fix"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "moduleNameMapper": {
+      "^graphql-apq(.*)$": "<rootDir>/src$1"
+    }
+  },
+  "dependencies": {
+    "memory-cache": "^0.2.0"
+  },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
     "@babel/preset-env": "^7.9.5",
@@ -39,34 +68,5 @@
     "prettier": "^2.0.5",
     "ramda": "^0.27.0",
     "supertest": "^4.0.2"
-  },
-  "dependencies": {
-    "memory-cache": "^0.2.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/lucasconstantino/graphql-apq.git"
-  },
-  "bugs": {
-    "url": "https://github.com/lucasconstantino/graphql-apq/issues"
-  },
-  "homepage": "https://github.com/lucasconstantino/graphql-apq#readme",
-  "jest": {
-    "collectCoverage": true,
-    "collectCoverageFrom": [
-      "src/**/*.js"
-    ],
-    "moduleNameMapper": {
-      "^graphql-apq(.*)$": "<rootDir>/src$1"
-    }
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{js,ts}": "eslint --cache --fix",
-    "*.{js,json,ts,css,md}": "prettier --write"
   }
 }
