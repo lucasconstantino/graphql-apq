@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "compile": "babel src -d lib",
-    "lint": "eslint index.js src",
+    "lint": "eslint src",
     "test": "jest test",
     "test:watch": "yarn test --watch --collectCoverage=no",
     "codecov": "yarn test && codecov",
