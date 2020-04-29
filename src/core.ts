@@ -1,4 +1,5 @@
 import { getStorage } from './memory-storage'
+import { errors, PersistedQueryError } from './errors'
 
 export interface CacheInterface {
   get: (key: string) => string | null | Promise<string | null>
@@ -15,29 +16,37 @@ export type HashResolver = (
   operation: Operation
 ) => string | null | Promise<string | null>
 
+export type ErrorFormatter = (error: PersistedQueryError) => any
+
 export interface APQConfig {
   cache?: CacheInterface
-  notFoundResponse?: any
+  formatError?: ErrorFormatter
+  requireHash?: boolean
   resolveHash?: HashResolver
 }
 
 const defaults = {
   cache: getStorage(),
-  notFoundResponse: { errors: [{ message: 'PersistedQueryNotFound' }] },
+  requireHash: true,
+  formatError: (error: PersistedQueryError) => ({
+    errors: [{ message: error.message }],
+  }),
   resolveHash: (operation: Operation) =>
     operation?.extensions?.persistedQuery?.sha256Hash || null,
 }
 
 class APQ {
   private cache: CacheInterface
-  private notFoundResponse: any
+  private requireHash: boolean
   private resolveHash: HashResolver
+  public formatError: ErrorFormatter
 
   constructor(_config?: APQConfig) {
     const config = { ...defaults, ..._config }
 
     this.cache = config.cache
-    this.notFoundResponse = config.notFoundResponse
+    this.formatError = config.formatError
+    this.requireHash = config.requireHash
     this.resolveHash = config.resolveHash
 
     this.validateConfig()
@@ -60,18 +69,23 @@ class APQ {
    */
   async processOperation(operation: Operation) {
     if (typeof operation !== 'object' && typeof operation !== 'undefined') {
-      throw new Error('Invalid operation provided')
+      throw new Error('Invalid GraphQL operation provided')
     }
 
     if (!operation) {
-      throw new Error('No operation provided')
+      throw new Error('No GraphQL operation provided')
     }
 
     const { query } = operation
     const hash = await this.resolveHash(operation)
 
-    // Proceed with unmodified operation in case no hash is present.
     if (!hash) {
+      // Advise user on missing required hash.
+      if (this.requireHash) {
+        throw new errors.HASH_MISSING()
+      }
+
+      // Proceed with unmodified operation in case no hash is present.
       return operation
     }
 
@@ -92,15 +106,14 @@ class APQ {
       await this.cache.set(hash, query)
     }
 
-    // Proceed with unmodified operation in case we couldn't find a query.
-    return operation
-  }
+    // Proceed with original operation if we had both query and hash, but was
+    // already cached.
+    if (query) {
+      return operation
+    }
 
-  /**
-   * Retrieve a valid GraphQL error for the persisted queries load failure.
-   */
-  getNotFoundResponse() {
-    return this.notFoundResponse
+    // Fail with no persisted query found in case no query could be resolved.
+    throw new errors.NOT_FOUND()
   }
 }
 

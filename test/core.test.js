@@ -43,57 +43,80 @@ describe('core', () => {
     })
   })
 
-  describe('getNotFoundResponse', () => {
-    it('should return a default persisted query not found response', () => {
-      expect(new APQ().getNotFoundResponse()).toHaveProperty(
+  describe('formatError', () => {
+    it('should return a persisted query formatter error', () => {
+      expect(apq.formatError(new Error('message'))).toHaveProperty(
         'errors.0.message',
-        'PersistedQueryNotFound'
+        'message'
       )
     })
 
-    it('should be possible to provide a custom persisted query not found response', () => {
-      const notFoundResponse = {}
-      expect(new APQ({ notFoundResponse }).getNotFoundResponse()).toBe(
-        notFoundResponse
-      )
+    it('should be possible to provide a custom persisted query error formatter', () => {
+      const error = new Error('message')
+      const formatError = () => 'custom'
+      expect(new APQ({ formatError }).formatError(error)).toBe('custom')
     })
   })
 
   describe('processOperation', () => {
-    it.each([
-      [1, 'Invalid operation provided'],
-      ['', 'Invalid operation provided'],
-      [null, 'No operation provided'],
-      [undefined, 'No operation provided'],
-    ])('should throw for invalid operations', (op, expected) => {
-      return expect(() => apq.processOperation(op)).rejects.toThrow(expected)
-    })
-
-    describe('should return unaltered operation', () => {
-      it('when no hash is available', async () => {
-        const operation = {}
-        expect(await apq.processOperation(operation)).toBe(operation)
+    describe('errors', () => {
+      it.each([
+        [1, 'Invalid GraphQL operation provided'],
+        ['', 'Invalid GraphQL operation provided'],
+        [null, 'No GraphQL operation provided'],
+        [undefined, 'No GraphQL operation provided'],
+      ])('should throw for invalid GraphQL operations', (op, expected) => {
+        return expect(() => apq.processOperation(op)).rejects.toThrow(expected)
       })
 
-      it('when provided hash is not cached', async () => {
+      it('should throw for missing hash', async () => {
+        await expect(() => apq.processOperation({})).rejects.toThrow(
+          'PersistedQueryHashMissing'
+        )
+
+        await expect(() =>
+          apq.processOperation({ query: 'graphql query' })
+        ).rejects.toThrow('PersistedQueryHashMissing')
+      })
+
+      it('should throw for query not found', async () => {
+        await expect(() => apq.processOperation({})).rejects.toThrow(
+          'PersistedQueryHashMissing'
+        )
+
+        await expect(() =>
+          apq.processOperation({ query: 'graphql query' })
+        ).rejects.toThrow('PersistedQueryHashMissing')
+      })
+
+      it('should throw when provided hash is not cached', async () => {
         const sha256Hash = 'some hash'
         const operation = { extensions: { persistedQuery: { sha256Hash } } }
-        expect(await apq.processOperation(operation)).toBe(operation)
+
+        await expect(() => apq.processOperation(operation)).rejects.toThrow(
+          'PersistedQueryNotFound'
+        )
       })
+    })
 
-      it('when there is a query and it is already cached', async () => {
-        const query = 'some query'
-        const sha256Hash = 'some hash'
+    it('should return unaltered operation when there is a query and it is already cached', async () => {
+      const query = 'some query'
+      const sha256Hash = 'some hash'
 
-        const operation = {
-          query,
-          extensions: { persistedQuery: { sha256Hash } },
-        }
+      const operation = {
+        query,
+        extensions: { persistedQuery: { sha256Hash } },
+      }
 
-        await apq.cache.set(sha256Hash, query)
+      await apq.cache.set(sha256Hash, query)
 
-        expect(await apq.processOperation(operation)).toBe(operation)
-      })
+      expect(await apq.processOperation(operation)).toBe(operation)
+    })
+
+    it('should return unaltered operation when no hash is available and not requiring hashes', async () => {
+      const apq = new APQ({ requireHash: false })
+      const operation = {}
+      expect(await apq.processOperation(operation)).toEqual(operation)
     })
 
     it('should add the query to the operation when already cached', async () => {

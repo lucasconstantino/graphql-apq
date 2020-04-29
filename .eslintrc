@@ -2,7 +2,8 @@
   "extends": ["taller", "prettier"],
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "no-unused-expressions": "off"
+    "no-unused-expressions": "off",
+    "no-unused-vars": "off"
   },
   "globals": {
     "jest": false
