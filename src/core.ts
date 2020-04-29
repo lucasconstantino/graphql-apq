@@ -39,6 +39,20 @@ class APQ {
     this.cache = config.cache
     this.notFoundResponse = config.notFoundResponse
     this.resolveHash = config.resolveHash
+
+    this.validateConfig()
+  }
+
+  private validateConfig() {
+    const cacheMethods = ['get', 'set', 'has'] as const
+
+    if (!this.cache || !cacheMethods.every((key) => this.cache[key])) {
+      throw new Error('Invalid cache provided')
+    }
+
+    if (typeof this.resolveHash !== 'function') {
+      throw new Error('Invalid resolveHash provided')
+    }
   }
 
   /**

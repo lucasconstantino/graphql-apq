@@ -4,13 +4,14 @@ describe('core', () => {
   let cache
   let apq
 
-  beforeEach(() => {
-    cache = {
-      get: jest.fn(),
-      set: jest.fn(),
-      has: jest.fn(),
-    }
+  const getCache = () => ({
+    get: jest.fn(),
+    set: jest.fn(),
+    has: jest.fn(),
+  })
 
+  beforeEach(() => {
+    cache = getCache()
     apq = new APQ({ cache })
   })
 
@@ -27,8 +28,18 @@ describe('core', () => {
     })
 
     it('should be possible to provide a custom cache object', () => {
-      const cache = {}
+      const cache = getCache()
       expect(new APQ({ cache }).cache).toBe(cache)
+    })
+
+    it('should throw for invalid custom cache', () => {
+      expect(() => new APQ({ cache: '' })).toThrow('Invalid cache')
+      expect(() => new APQ({ cache: {} })).toThrow('Invalid cache')
+    })
+
+    it('should throw for invalid resolveHash', () => {
+      expect(() => new APQ({ resolveHash: '' })).toThrow('Invalid resolveHash')
+      expect(() => new APQ({ resolveHash: {} })).toThrow('Invalid resolveHash')
     })
   })
 
