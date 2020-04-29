@@ -23,7 +23,7 @@
   "scripts": {
     "codecov": "yarn test && codecov",
     "compile": "babel src --extensions .ts -d lib",
-    "lint": "eslint src",
+    "lint": "eslint src --ext .ts",
     "prepublish": "npm test && npm run lint && npm run compile",
     "type-check": "tsc",
     "test": "jest test",
