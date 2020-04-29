@@ -1,249 +1,166 @@
-import express, { Router } from 'express'
+import express from 'express'
 import request from 'supertest'
 import bodyParser from 'body-parser'
-import { graphqlExpress } from 'apollo-server-express'
-import { makeExecutableSchema } from 'graphql-tools'
 
 import persistedQuery from 'graphql-apq/express'
 
+const operation = (query, sha256Hash) => ({
+  ...(sha256Hash ? { extensions: { persistedQuery: { sha256Hash } } } : {}),
+  ...(query ? { query } : {}),
+})
+
 describe('express middleware', () => {
-  let next
-  let req
-  let res
+  describe('unit', () => {
+    const args = (body) => [
+      { body },
+      { setHeader: jest.fn(), send: jest.fn() },
+      jest.fn(),
+    ]
 
-  beforeEach(() => {
-    req = {}
-    res = {
-      setHeader: jest.fn(),
-      send: jest.fn()
-    }
-    next = jest.fn()
-  })
-
-  describe('defaults', () => {
-    const middleware = persistedQuery()
-
-    it('should do nothing when no body is available', () => {
-      middleware(req, res, next)
-      expect(next).toHaveBeenCalled()
-      expect(req.body).toEqual(req.body)
-    })
-
-    it('should do nothing on queries with no persisted query data', () => {
-      const body = {
-        operationName: 'Name',
-        query: 'query content',
-        variables: {}
-      }
-
-      middleware({ ...req, body }, res, next)
-      expect(next).toHaveBeenCalled()
-      expect(req.body).toEqual(req.body)
-    })
-
-    it('should respond with not found response when no query is found', () => {
-      const body = {
-        extensions: { persistedQuery: { sha256Hash: 'some hash' } },
-        operationName: 'Name',
-        variables: {}
-      }
-
-      middleware({ ...req, body }, res, next)
-
+    const expectErrorResponse = (res, message) => {
+      expect(res.setHeader).toHaveBeenCalledTimes(1)
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/json'
+      )
       expect(res.send).toHaveBeenCalledTimes(1)
       expect(res.send.mock.calls[0][0]).toEqual(
-        JSON.stringify({
-          errors: [{ message: 'PersistedQueryNotFound' }]
-        })
+        JSON.stringify({ errors: [{ message }] })
       )
+    }
+
+    describe('errors', () => {
+      it('should respond error when missing query hash', async () => {
+        const [req, res, next] = args({})
+        await persistedQuery()(req, res, next)
+        expectErrorResponse(res, 'PersistedQueryHashMissing')
+      })
+
+      it('should respond error when no query found', async () => {
+        const body = operation(null, 'some hash')
+        const [req, res, next] = args(body)
+        await persistedQuery()(req, res, next)
+
+        expect(req.body).toBe(body)
+        expectErrorResponse(res, 'PersistedQueryNotFound')
+      })
     })
 
-    it('should persist query when both hash an query are provided', () => {
+    it('should persist query when both hash an query are provided', async () => {
       const sha256Hash = 'some hash'
       const query = 'some query'
 
+      const body = operation(query, sha256Hash)
+
       const cache = {
-        put: jest.fn(),
         get: jest.fn(),
-        keys: () => []
+        set: jest.fn(),
+        has: () => false,
       }
 
-      const body = {
-        query,
-        extensions: { persistedQuery: { sha256Hash } },
-        operationName: 'Name',
-        variables: {}
-      }
-
+      const [req, res, next] = args(body)
       const middleware = persistedQuery({ cache })
 
-      middleware({ ...req, body }, res, next)
+      await middleware(req, res, next)
 
-      expect(cache.put).toHaveBeenCalledTimes(1)
-      expect(cache.put).toHaveBeenCalledWith(sha256Hash, query)
+      expect(cache.set).toHaveBeenCalledTimes(1)
+      expect(cache.set).toHaveBeenCalledWith(sha256Hash, query)
+
+      expect(next).toHaveBeenCalledTimes(1)
+      expect(req.body).toBe(body)
     })
 
-    it('should fulfil operation with previously persisted query', () => {
+    it('should fulfil operation with previously persisted query', async () => {
       const sha256Hash = 'some hash'
       const query = 'some query'
 
       const cache = {
-        put: jest.fn(),
+        set: jest.fn(),
         get: jest.fn(() => query),
-        keys: () => [sha256Hash]
+        has: () => true,
       }
 
-      const body = {
-        extensions: { persistedQuery: { sha256Hash } },
-        operationName: 'Name',
-        variables: {}
-      }
+      const body = operation(null, sha256Hash)
 
-      const request = { ...req, body }
-
+      const [req, res, next] = args(body)
       const middleware = persistedQuery({ cache })
 
-      expect(request.body).not.toHaveProperty('query', query)
-      middleware(request, res, next)
+      expect(req.body).not.toHaveProperty('query', query)
+      await middleware(req, res, next)
 
       expect(cache.get).toHaveBeenCalledTimes(1)
       expect(cache.get).toHaveBeenCalledWith(sha256Hash)
-      expect(request.body).toHaveProperty('query', query)
+
+      // fulfilled:
+      expect(req.body).toHaveProperty('query', query)
     })
   })
 
   describe('integration', () => {
-    let app
+    let after
 
-    beforeEach(() => {
-      const typeDefs = `
-        type SomeType {
-          field: String
-        }
+    const getApp = (config) =>
+      express()
+        .use(bodyParser.json())
+        .use(persistedQuery(config))
+        .use((after = jest.fn((_req, res) => res.send('ok'))))
 
-        type Query {
-          someType: SomeType
-        }
+    describe('errors', () => {
+      it('should respond error when missing query hash', () => {
+        return request(getApp())
+          .post('/')
+          .send()
+          .expect(200, { errors: [{ message: 'PersistedQueryHashMissing' }] })
+      })
 
-        schema {
-          query: Query
-        }
-      `
+      it('should respond error when no query found', async () => {
+        return request(getApp())
+          .post('/')
+          .send(operation(null, 'some hash'))
+          .expect(200, { errors: [{ message: 'PersistedQueryNotFound' }] })
+      })
+    })
 
-      const resolvers = {
-        Query: {
-          someType: () => ({})
-        },
-        SomeType: {
-          field: () => 'field value'
-        }
+    it('should persist query when both hash an query are provided', async () => {
+      const sha256Hash = 'some hash'
+      const query = 'some query'
+
+      const cache = {
+        get: jest.fn(),
+        set: jest.fn(),
+        has: () => false,
       }
 
-      const schema = makeExecutableSchema({ typeDefs, resolvers })
+      const body = operation(query, sha256Hash)
 
-      const graphql = new Router()
-        .use(bodyParser.json())
-        .use(persistedQuery())
-        .use(
-          graphqlExpress({
-            schema
-          })
-        )
+      await request(getApp({ cache })).post('/').send(body).expect(200, 'ok')
 
-      app = express().use('/graphql', graphql)
+      expect(cache.set).toHaveBeenCalledTimes(1)
+      expect(cache.set).toHaveBeenCalledWith(sha256Hash, query)
+
+      expect(after).toHaveBeenCalledTimes(1)
+      expect(after).toHaveProperty('mock.calls.0.0.body', body)
     })
 
-    const operationName = 'SomeOperation'
+    it('should fulfil operation with previously persisted query', async () => {
+      const sha256Hash = 'some hash'
+      const query = 'some query'
 
-    const query = `
-        query ${operationName} {
-          someType {
-            field
-          }
-        }
-      `
+      const cache = {
+        set: jest.fn(),
+        get: jest.fn(() => query),
+        has: () => true,
+      }
 
-    const sha256Hash = 'some-hash'
-    const extensions = { persistedQuery: { sha256Hash } }
+      const body = operation(null, sha256Hash)
 
-    const promisifyRequest = req =>
-      new Promise((resolve, reject) =>
-        req.end((err, res) => (err ? reject(err) : resolve(res)))
-      )
+      await request(getApp({ cache })).post('/').send(body).expect(200, 'ok')
 
-    const requests = {
-      query: () =>
-        promisifyRequest(
-          request(app)
-            .post('/graphql')
-            .send({
-              operationName,
-              query
-            })
-        ),
-      hash: () =>
-        promisifyRequest(
-          request(app)
-            .post('/graphql')
-            .send({
-              operationName,
-              extensions
-            })
-        ),
-      hashAndQuery: () =>
-        promisifyRequest(
-          request(app)
-            .post('/graphql')
-            .send({
-              operationName,
-              extensions,
-              query
-            })
-        )
-    }
+      expect(cache.get).toHaveBeenCalledTimes(1)
+      expect(cache.get).toHaveBeenCalledWith(sha256Hash)
 
-    it('should respond default query based queries', async () => {
-      const response = await requests.query()
-      expect(response.body).toHaveProperty('data.someType.field', 'field value')
-    })
-
-    it('should respond with not found response when hash is given but no query is found', async () => {
-      const response = await requests.hash()
-      expect(response.body).toHaveProperty(
-        'errors.0.message',
-        'PersistedQueryNotFound'
-      )
-    })
-
-    it('should respond when both hash and query are provided', async () => {
-      const response = await requests.hashAndQuery()
-      expect(response.body).toHaveProperty('data.someType.field', 'field value')
-    })
-
-    it('should cache hash based request and respond subsequent calls correctly', async () => {
-      let full
-      let hash
-
-      hash = await requests.hash()
-      expect(hash.body).not.toHaveProperty('data.someType.field', 'field value')
-      expect(hash.body).toHaveProperty(
-        'errors.0.message',
-        'PersistedQueryNotFound'
-      )
-
-      full = await requests.hashAndQuery()
-      expect(full.body).toHaveProperty('data.someType.field', 'field value')
-      expect(full.body).not.toHaveProperty(
-        'errors.0.message',
-        'PersistedQueryNotFound'
-      )
-
-      hash = await requests.hash()
-      expect(hash.body).toHaveProperty('data.someType.field', 'field value')
-      expect(hash.body).not.toHaveProperty(
-        'errors.0.message',
-        'PersistedQueryNotFound'
-      )
+      // fulfilled:
+      expect(after).toHaveProperty('mock.calls.0.0.body.query', query)
     })
   })
 })

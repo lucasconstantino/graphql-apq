@@ -1,28 +1,23 @@
-import APQ from './core'
+import { RequestHandler } from 'express'
+import { APQ, APQConfig } from './core'
+import { PersistedQueryError } from './errors'
 
-export default (options) => {
+export default (options: APQConfig): RequestHandler => {
   const apq = new APQ(options)
 
-  return (req, res, next) => {
-    // Skip when no persistedQuery data is available.
-    if (
-      !req.body ||
-      !req.body.extensions ||
-      !req.body.extensions.persistedQuery
-    ) {
+  return async (req, res, next) => {
+    try {
+      req.body = await apq.processOperation(req.body)
       next()
-      return
+    } catch (error) {
+      // Respond known errors gracefully
+      if (error instanceof PersistedQueryError) {
+        res.setHeader('Content-Type', 'application/json')
+        res.send(JSON.stringify(apq.formatError(error)))
+        return
+      }
+
+      next(error)
     }
-
-    req.body = apq.processOperation(req.body)
-
-    // No query found response.
-    if (!req.body.query) {
-      res.setHeader('Content-Type', 'application/json')
-      res.send(JSON.stringify(apq.getNotFoundResponse()))
-      return
-    }
-
-    next()
   }
 }
