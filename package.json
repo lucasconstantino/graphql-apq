@@ -26,7 +26,7 @@
     "lint": "eslint src --ext .ts",
     "prepublish": "npm test && npm run lint && npm run compile",
     "type-check": "tsc",
-    "test": "jest test",
+    "test": "jest",
     "test:watch": "yarn test --watch --collectCoverage=no"
   },
   "husky": {
