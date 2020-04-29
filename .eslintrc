@@ -1,5 +1,6 @@
 {
-  "extends": ["taller"],
+  "extends": ["taller", "prettier"],
+  "parser": "@typescript-eslint/parser",
   "rules": {
     "no-unused-expressions": "off"
   },
