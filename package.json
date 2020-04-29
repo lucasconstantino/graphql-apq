@@ -24,7 +24,7 @@
     "codecov": "yarn test && codecov",
     "compile": "babel src --extensions .ts -d lib",
     "lint": "eslint src --ext .ts",
-    "prepublish": "npm test && npm run lint && npm run compile",
+    "prepublish": "npm run lint && npm run type-check && npm test && npm run compile",
     "type-check": "tsc",
     "test": "jest",
     "test:watch": "yarn test --watch --collectCoverage=no"
