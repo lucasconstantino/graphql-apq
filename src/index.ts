@@ -1,3 +1,1 @@
-import APQ from './core'
-
-export default APQ
+export { APQ as default } from './core'

@@ -1,6 +1,19 @@
 import APQ from 'graphql-apq'
 
 describe('core', () => {
+  let cache
+  let apq
+
+  beforeEach(() => {
+    cache = {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+    }
+
+    apq = new APQ({ cache })
+  })
+
   it('should create an APQ instance', () => {
     expect(new APQ()).toBeInstanceOf(APQ)
   })
@@ -8,8 +21,9 @@ describe('core', () => {
   describe('cache', () => {
     it('should create a default cache object', () => {
       const cache = new APQ().cache
-      expect(cache).toHaveProperty('put')
-      expect(cache).toHaveProperty('get')
+      expect(cache).toHaveProperty('get', expect.any(Function))
+      expect(cache).toHaveProperty('set', expect.any(Function))
+      expect(cache).toHaveProperty('has', expect.any(Function))
     })
 
     it('should be possible to provide a custom cache object', () => {
@@ -20,9 +34,10 @@ describe('core', () => {
 
   describe('getNotFoundResponse', () => {
     it('should return a default persisted query not found response', () => {
-      expect(new APQ().getNotFoundResponse()).toEqual({
-        errors: [{ message: 'PersistedQueryNotFound' }]
-      })
+      expect(new APQ().getNotFoundResponse()).toHaveProperty(
+        'errors.0.message',
+        'PersistedQueryNotFound'
+      )
     })
 
     it('should be possible to provide a custom persisted query not found response', () => {
@@ -34,70 +49,68 @@ describe('core', () => {
   })
 
   describe('processOperation', () => {
-    let apq
-
-    beforeEach(() => {
-      apq = new APQ()
+    it.each([
+      [1, 'Invalid operation provided'],
+      ['', 'Invalid operation provided'],
+      [null, 'No operation provided'],
+      [undefined, 'No operation provided'],
+    ])('should throw for invalid operations', (op, expected) => {
+      return expect(() => apq.processOperation(op)).rejects.toThrow(expected)
     })
 
-    it('should throw for invalid operations', () => {
-      expect(() => apq.processOperation(null)).toThrow('No operation provided')
-    })
+    describe('should return unaltered operation', () => {
+      it('when no hash is available', async () => {
+        const operation = {}
+        expect(await apq.processOperation(operation)).toBe(operation)
+      })
 
-    it('should return unaltered operation when no hash is available', () => {
-      const operation = {}
-      expect(apq.processOperation(operation)).toBe(operation)
-    })
+      it('when provided hash is not cached', async () => {
+        const sha256Hash = 'some hash'
+        const operation = { extensions: { persistedQuery: { sha256Hash } } }
+        expect(await apq.processOperation(operation)).toBe(operation)
+      })
 
-    it('should return unaltered operation when provided hash is not cached', () => {
-      const sha256Hash = 'some hash'
-      const operation = {
-        extensions: { persistedQuery: { sha256Hash } }
-      }
-      expect(apq.processOperation(operation)).toBe(operation)
-    })
+      it('when there is a query and it is already cached', async () => {
+        const query = 'some query'
+        const sha256Hash = 'some hash'
 
-    it('should return unaltered operation when there is a query and it is already cached', () => {
-      const query = 'some query'
-      const sha256Hash = 'some hash'
-      const operation = {
-        query,
-        extensions: { persistedQuery: { sha256Hash } }
-      }
+        const operation = {
+          query,
+          extensions: { persistedQuery: { sha256Hash } },
+        }
 
-      apq.cache.put(sha256Hash, query)
+        await apq.cache.set(sha256Hash, query)
 
-      expect(apq.processOperation(operation)).toBe(operation)
-    })
-
-    it('should add the query to the operation when already cached', () => {
-      const query = 'some query'
-      const sha256Hash = 'some hash'
-      const operation = {
-        extensions: { persistedQuery: { sha256Hash } }
-      }
-
-      apq.cache.put(sha256Hash, query)
-
-      expect(apq.processOperation(operation)).toEqual({
-        ...operation,
-        query
+        expect(await apq.processOperation(operation)).toBe(operation)
       })
     })
 
-    it('should add the query to the cache when both query and hash are available', () => {
+    it('should add the query to the operation when already cached', async () => {
       const query = 'some query'
       const sha256Hash = 'some hash'
+      const operation = { extensions: { persistedQuery: { sha256Hash } } }
+
+      cache.has.mockReturnValueOnce(true)
+      cache.get.mockReturnValueOnce(query)
+
+      const result = await apq.processOperation(operation)
+
+      expect(result).toHaveProperty('query', query)
+    })
+
+    it('should add the query to the cache when both query and hash are available', async () => {
+      const query = 'some query'
+      const sha256Hash = 'some hash'
+
       const operation = {
         query,
-        extensions: { persistedQuery: { sha256Hash } }
+        extensions: { persistedQuery: { sha256Hash } },
       }
 
-      apq.cache.put = jest.fn()
-      apq.processOperation(operation)
+      expect(await apq.processOperation(operation)).toBe(operation)
 
-      expect(apq.cache.put).toHaveBeenCalledTimes(1)
-      expect(apq.cache.put).toHaveBeenCalledWith(sha256Hash, query)
+      expect(apq.cache.set).toHaveBeenCalledTimes(1)
+      expect(apq.cache.set).toHaveBeenCalledWith(sha256Hash, query)
     })
   })
 })

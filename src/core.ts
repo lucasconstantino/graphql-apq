@@ -1,60 +1,93 @@
-import { path } from 'ramda'
-import { Cache } from 'memory-cache'
+import { getStorage } from './memory-storage'
 
-const defaultNotFoundResponse = {
-  errors: [{ message: 'PersistedQueryNotFound' }],
+export interface CacheInterface {
+  get: (key: string) => string | null | Promise<string | null>
+  set: (key: string, value: string) => void | Promise<void>
+  has: (key: string) => boolean | Promise<boolean>
 }
 
-export default class APQ {
-  constructor (config = {}) {
-    this.cache = config.cache || new Cache()
-    this.notFoundResponse = config.notFoundResponse || defaultNotFoundResponse
-    this.resolveHash =
-      config.resolvehash || path(['extensions', 'persistedQuery', 'sha256Hash'])
+export interface Operation {
+  query?: string
+  extensions?: { persistedQuery?: { sha256Hash?: string } }
+}
+
+export type HashResolver = (
+  operation: Operation
+) => string | null | Promise<string | null>
+
+export interface APQConfig {
+  cache?: CacheInterface
+  notFoundResponse?: any
+  resolveHash?: HashResolver
+}
+
+const defaults = {
+  cache: getStorage(),
+  notFoundResponse: { errors: [{ message: 'PersistedQueryNotFound' }] },
+  resolveHash: (operation: Operation) =>
+    operation?.extensions?.persistedQuery?.sha256Hash || null,
+}
+
+class APQ {
+  private cache: CacheInterface
+  private notFoundResponse: any
+  private resolveHash: HashResolver
+
+  constructor(_config?: APQConfig) {
+    const config = { ...defaults, ..._config }
+
+    this.cache = config.cache
+    this.notFoundResponse = config.notFoundResponse
+    this.resolveHash = config.resolveHash
   }
 
   /**
    * Processes an operation and ensure query is set, when possible.
    */
-  processOperation (operation) {
+  async processOperation(operation: Operation) {
+    if (typeof operation !== 'object' && typeof operation !== 'undefined') {
+      throw new Error('Invalid operation provided')
+    }
+
     if (!operation) {
       throw new Error('No operation provided')
     }
 
     const { query } = operation
-    const hash = this.resolveHash(operation)
+    const hash = await this.resolveHash(operation)
 
-    // Return unmodified operation in case no hash is present.
+    // Proceed with unmodified operation in case no hash is present.
     if (!hash) {
       return operation
     }
 
-    const isCached = this.cache.keys().indexOf(hash) !== -1
+    const isCached = hash && (await this.cache.has(hash))
 
-    // Return unmodified operation in case query is already cached.
+    // Proceed with unmodified operation in case query is present and already cached.
     if (query && isCached) {
       return operation
     }
 
-    // Add the query to the operation in case we have it cached.
+    // Append query to the operation in case we have it cached.
     if (!query && isCached) {
       return { ...operation, query: this.cache.get(hash) }
     }
 
     // Add the query to the cache in case we don't have it yet.
     if (query && !isCached) {
-      this.cache.put(hash, query)
+      await this.cache.set(hash, query)
     }
 
-    // When we have no query on the operation nor the cache we simply
-    // return the operation unaltered.
+    // Proceed with unmodified operation in case we couldn't find a query.
     return operation
   }
 
   /**
    * Retrieve a valid GraphQL error for the persisted queries load failure.
    */
-  getNotFoundResponse () {
+  getNotFoundResponse() {
     return this.notFoundResponse
   }
 }
+
+export { APQ }
