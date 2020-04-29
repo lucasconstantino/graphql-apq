@@ -24,10 +24,11 @@
     "codecov": "yarn test && codecov",
     "compile": "babel src --extensions .ts -d lib",
     "lint": "eslint src --ext .ts",
-    "prepublish": "npm run lint && npm run type-check && npm test && npm run compile",
-    "type-check": "tsc",
+    "prepublish": "yarn qa && yarn compile",
+    "qa": "yarn lint && yarn type-check && npm test",
     "test": "jest",
-    "test:watch": "yarn test --watch --collectCoverage=no"
+    "test:watch": "yarn test --watch --collectCoverage=no",
+    "type-check": "tsc"
   },
   "husky": {
     "hooks": {
