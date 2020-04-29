@@ -60,10 +60,19 @@ options to the middleware initialization as follows:
 
 ##### `cache`
 
-A cache object implementing `get`, `put`, and `keys` methods. Defaults
-to an instance of [`memory-cache`](https://github.com/ptarjan/node-cache).
-Can be modified to provide a more specialized caching system with cache
-cleaning, for instance.
+A cache object implementing at least the following interface:
+
+```ts
+interface CacheInterface {
+  get: (key: string) => string | null | Promise<string | null>
+  set: (key: string, value: string) => void | Promise<void>
+  has: (key: string) => boolean | Promise<boolean>
+}
+```
+
+Defaults to an instance of
+[`memory-cache`](https://github.com/ptarjan/node-cache). Can be modified to
+provide a more specialized caching system, such as [`node-redis`](https://github.com/NodeRedis/node-redis).
 
 ##### `resolveHash`
 
