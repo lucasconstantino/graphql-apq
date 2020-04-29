@@ -2,7 +2,7 @@ import { path } from 'ramda'
 import { Cache } from 'memory-cache'
 
 const defaultNotFoundResponse = {
-  errors: [{ message: 'PersistedQueryNotFound' }]
+  errors: [{ message: 'PersistedQueryNotFound' }],
 }
 
 export default class APQ {

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "noEmit": false,
+    "target": "es6",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedLocals": true,
+    "pretty": true,
+    "lib": ["esnext"]
+  }
+}

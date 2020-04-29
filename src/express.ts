@@ -1,6 +1,6 @@
 import APQ from './core'
 
-export default options => {
+export default (options) => {
   const apq = new APQ(options)
 
   return (req, res, next) => {
